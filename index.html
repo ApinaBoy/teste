@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificador de Teorias + Groq IA</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Verificador de Teorias + Assistente Groq</h1>
+
+        <div id="form">
+            <label for="teoria">Teoria para verificar:</label><br>
+            <input type="text" id="teoria" placeholder="Ex: O universo está se expandindo"><br><br>
+            <button onclick="analisarTeoria()"><i class="fa fa-search"></i> Analisar</button>
+        </div>
+        <div id="loading">
+            <div class="spinner"></div>
+            <p>Analisando...</p>
+        </div>
+        <div id="resultado"></div>
+
+        <hr style="margin: 30px 0;">
+
+        <div id="assistente-form">
+            <label for="pergunta">Pergunte ao Groq:</label><br>
+            <input type="text" id="pergunta" placeholder="Ex: Qual a capital da França?"><br><br>
+            <button onclick="perguntarAssistente()"><i class="fa fa-robot"></i> Perguntar</button>
+        </div>
+        <div id="assistente-loading">
+            <div class="spinner"></div>
+            <p>Processando...</p>
+        </div>
+        <div id="assistente-resultado"></div>
+    </div>
+
+    <script>
+        async function analisarTeoria() {
+            const teoria = document.getElementById('teoria').value.trim();
+            if (!teoria) return alert('Digite uma teoria!');
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('resultado').innerHTML = '';
+
+            try {
+                const res = await fetch('/analisar', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ teoria })
+                });
+                if (!res.ok) throw new Error(await res.text());
+                const data = await res.json();
+                document.getElementById('resultado').innerHTML = `
+                    <h3>Resultado</h3>
+                    <p><strong>Teoria:</strong> ${data.teoria}</p>
+                    <p><strong>Conclusão:</strong> ${data.conclusao}</p>
+                    <p><strong>Dados:</strong> ${data.dados}</p>
+                    <p><strong>Números:</strong> ${data.numeros_extraidos.join(', ')}</p>
+                    ${data.calculo ? `<p><strong>Cálculo:</strong> ${data.calculo}</p>` : ''}
+                    <p><strong>Fonte:</strong> ${data.fonte}</p>
+                `;
+            } catch (err) {
+                document.getElementById('resultado').innerHTML = `<p style="color:red">Erro: ${err.message}</p>`;
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        async function perguntarAssistente() {
+            const pergunta = document.getElementById('pergunta').value.trim();
+            if (!pergunta) return alert('Digite uma pergunta!');
+
+            document.getElementById('assistente-loading').style.display = 'block';
+            document.getElementById('assistente-resultado').innerHTML = '';
+
+            try {
+                const res = await fetch('/assistente', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ pergunta })
+                });
+                if (!res.ok) throw new Error(await res.text());
+                const data = await res.json();
+                document.getElementById('assistente-resultado').innerHTML = `
+                    <h3>Resposta Groq</h3>
+                    <p>${data.resposta.replace(/\n/g, '<br>')}</p>
+                `;
+            } catch (err) {
+                document.getElementById('assistente-resultado').innerHTML = `<p style="color:red">Erro: ${err.message}</p>`;
+            } finally {
+                document.getElementById('assistente-loading').style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
